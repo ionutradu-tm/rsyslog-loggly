@@ -30,7 +30,7 @@ mkdir -p /var/spool/rsyslog
 LOGGLY_TAG=$(echo "$LOGGLY_TAG" | sed 's/:/\\\\" tag=\\\\"/g')
 
 # Replace variables
-sed -i "s/LOGGLY_AUTH_TOKEN/$LOGGLY_AUTH_TOKEN/" /etc/rsyslog.conf
+sed -i "s/LOGGLY_TOKEN/$LOGGLY_AUTH_TOKEN/" /etc/rsyslog.conf
 sed -i "s/LOGGLY_TAG/$LOGGLY_TAG/" /etc/rsyslog.conf
 
 # Run RSyslog daemon
