@@ -1,9 +1,9 @@
 FROM alpine:3.3
-MAINTAINER Jonathan Short <jonathan.short@sendgrid.com>
 
 RUN apk add --update rsyslog rsyslog-tls && rm -rf /var/cache/apk/*
 
 ADD run.sh /run.sh
+ADD rsyslog.conf /etc/
 RUN chmod +x /run.sh
 
 EXPOSE 514
