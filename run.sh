@@ -24,7 +24,7 @@ fi
 
 # Create spool directory
 mkdir -p /var/spool/rsyslog
-
+mkdir -p /var/log/nginx
 
 # Expand multiple tags, in the format of tag1:tag2:tag3, into several tag arguments
 LOGGLY_TAG=$(echo "$LOGGLY_TAG" | sed 's/:/\\\\" tag=\\\\"/g')
