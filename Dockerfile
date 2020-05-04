@@ -1,6 +1,6 @@
-FROM alpine:3.3
+FROM ubuntu:20.04
 
-RUN apk add --update rsyslog rsyslog-tls && rm -rf /var/cache/apk/*
+RUN apt-get update && apt install -y  rsyslog && apt-get clean
 
 ADD run.sh /run.sh
 ADD rsyslog.conf /etc/

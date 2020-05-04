@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Fail if LOGGLY_AUTH_TOKEN is not set
 if [ -z "$LOGGLY_AUTH_TOKEN" ]; then
@@ -32,6 +32,7 @@ LOGGLY_TAG=$(echo "$LOGGLY_TAG" | sed 's/:/\\\\" tag=\\\\"/g')
 # Replace variables
 sed -i "s/LOGGLY_TOKEN/$LOGGLY_AUTH_TOKEN/" /etc/rsyslog.conf
 sed -i "s/LOGGLY_TAG/$LOGGLY_TAG/" /etc/rsyslog.conf
+
 
 # Run RSyslog daemon
 exec /usr/sbin/rsyslogd -n
