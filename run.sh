@@ -96,7 +96,7 @@ while IFS='=' read -r name value ; do
                 COND=""
                 for app in ${APPS}
                 do
-                  COND+="(\$progamname startswith \"${app}\") or "
+                  COND+="(\$progamname startswith '${app}') or "
                 done
                 COND="("${COND}
                 COND=$(echo $COND| sed 's/\(.*\)\ or/\1\) and /')
