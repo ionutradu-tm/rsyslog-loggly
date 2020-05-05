@@ -91,15 +91,16 @@ while IFS='=' read -r name value ; do
                   echo "Please setup R[\d+]_APPS var"
                   exit 1
                 fi
+                LOGGLY_LOG_LEVEL_NUMBER=${LOG_LEVEL[${SERVER_LOGLEVEL,,}]}
+                COND_SEVERITY="(\$syslogseverity <= '$LOGGLY_LOG_LEVEL_NUMBER')"
+                COND=""
                 for app in ${APPS}
                 do
-                  if [[ -z ${FIRST} ]]; then
-                    COND="(\$progamname startswith \"${app}\")"
-                    FIRST="1"
-                  else
-                    COND+=" or (\$progamname startswith \"${app}\")"
-                  fi
+                  COND+="(\$progamname startswith \"${app}\") or "
                 done
+                COND="("${COND}
+                COND=$(echo $COND| sed 's/\(.*\)\ or/\1\) and /')
+                COND=${COND}${COND_SEVERITY}
                 syslog_server=${SYSYLOG_SERVER_TEMPLATE/__INDEX__/${id}}
                 syslog_server=${syslog_server/__HOST__/${SERVER}}
                 syslog_server=${syslog_server/__HOST_PROTO__/${SERVER_PROTO}}
