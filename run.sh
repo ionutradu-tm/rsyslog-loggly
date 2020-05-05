@@ -70,7 +70,8 @@ while IFS='=' read -r name value ; do
                   echo "Please setup R[\d+]_APPS var"
                   exit 1
                 fi
-                for app in ${APPS} do
+                for app in ${APPS}
+                do
                   if [[ -z ${FIRST} ]]; then
                     COND="(\$progamname startswith \"${app}\")"
                     FIRST="1"
