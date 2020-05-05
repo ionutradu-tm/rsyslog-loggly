@@ -32,6 +32,27 @@ declare -A LOG_LEVEL=(
 [info]=6
 [debug]=7
 )
+
+SYSYLOG_SERVER_TEMPLATE="
+# Setup disk assisted queues. An on-disk queue is created for this action.
+# If the remote host is down, messages are spooled to disk and sent when
+# it is up again.
+\$WorkDirectory /var/spool/rsyslog # where to place spool files
+\$ActionQueueFileName fwdRule__INDEX__     # unique name prefix for spool files
+\$ActionQueueMaxDiskSpace 1g       # 1gb space limit (use as much as possible)
+\$ActionQueueSaveOnShutdown on     # save messages to disk on shutdown
+\$ActionQueueType LinkedList       # run asynchronously
+\$ActionResumeRetryCount -1        # infinite retries if host is down
+
+
+if __CONDITIONS__ then {
+   action(type=\"omfwd\" protocol=\"__HOST_PROTO__\" target=\"__HOST__\" port=\"__HOST_PORT__\" )
+}
+
+"
+
+
+
 LOGGLY_LOG_LEVEL=${LOGGLY_LOG_LEVEL:-'warning'}
 LOGGLY_LOG_LEVEL_NUMBER=${LOG_LEVEL[${LOGGLY_LOG_LEVEL,,}]}
 
