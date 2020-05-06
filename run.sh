@@ -72,6 +72,7 @@ sed -i "s/LOGGLY_LOG_LEVEL/$LOGGLY_LOG_LEVEL_NUMBER/" /etc/rsyslog.conf
 SYSYLOG_SERVERS=""
 while IFS='=' read -r name value ; do
         if [[ $name  == *'_HOST' ]]; then
+                new_server="1"
                 prefix=${name%%_*} # delete longest match from back (everything after first _)
                 id="$prefix"
                 server="${prefix}_HOST"
@@ -111,10 +112,11 @@ while IFS='=' read -r name value ; do
 
         fi
 done < <(env)
-IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$SYSYLOG_SERVERS") || true
-SYSYLOG_SERVERS_REPLACED=${REPLY%$'\n'}
-sed -i -r "s/#__SYSLOG_SERVERS__/${SYSYLOG_SERVERS_REPLACED}/g" /etc/rsyslog.conf
-
+if [[ -n ${new_server} ]];then
+  IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$SYSYLOG_SERVERS") || true
+  SYSYLOG_SERVERS_REPLACED=${REPLY%$'\n'}
+  sed -i -r "s/#__SYSLOG_SERVERS__/${SYSYLOG_SERVERS_REPLACED}/g" /etc/rsyslog.conf
+fi
 
 # Run RSyslog daemon
 exec /usr/sbin/rsyslogd -n
