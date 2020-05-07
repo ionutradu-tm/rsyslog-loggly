@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Fail if LOGGLY_AUTH_TOKEN is not set
-if [ -z "$LOGGLY_AUTH_TOKEN" ]; then
-  if [ ! -z "$TOKEN" ]; then
+if [ -z "${LOGGLY_AUTH_TOKEN}" ]; then
+  if [ ! -z "${TOKEN}" ]; then
     # grandfather old env var
-    export LOGGLY_AUTH_TOKEN=$TOKEN
+    export LOGGLY_AUTH_TOKEN=${TOKEN}
   else
     echo "Missing \$LOGGLY_AUTH_TOKEN"
     exit 1
@@ -12,10 +12,10 @@ if [ -z "$LOGGLY_AUTH_TOKEN" ]; then
 fi
 
 # Fail if LOGGLY_TAG is not set
-if [ -z "$LOGGLY_TAG" ]; then
-  if [ ! -z "$TAG" ]; then
+if [ -z "{$LOGGLY_TAG}" ]; then
+  if [ ! -z "${TAG}" ]; then
     # grandfather old env var
-    export LOGGLY_TAG=$TAG
+    export LOGGLY_TAG=${TAG}
   else
     echo "Missing \$LOGGLY_TAG"
     exit 1
@@ -46,7 +46,7 @@ SYSYLOG_SERVER_TEMPLATE="
 
 
 if __CONDITIONS__ then {
-   action(type=\"omfwd\" protocol=\"__HOST_PROTO__\" target=\"__HOST__\" port=\"__HOST_PORT__\" )
+   action(type=\"omfwd\" protocol=\"__HOST_PROTO__\" target=\"__HOST__\" port=\"__HOST_PORT__\" __TEMPLATE__ )
 }
 
 "
@@ -62,61 +62,76 @@ mkdir -p /var/spool/rsyslog
 
 
 # Expand multiple tags, in the format of tag1:tag2:tag3, into several tag arguments
-LOGGLY_TAG=$(echo "$LOGGLY_TAG" | sed 's/:/\\\\" tag=\\\\"/g')
+LOGGLY_TAG=$(echo "${LOGGLY_TAG}" | sed 's/:/\\\\" tag=\\\\"/g')
 
 # Replace variables
-sed -i "s/LOGGLY_TOKEN/$LOGGLY_AUTH_TOKEN/" /etc/rsyslog.conf
-sed -i "s/LOGGLY_TAG/$LOGGLY_TAG/" /etc/rsyslog.conf
-sed -i "s/LOGGLY_LOG_LEVEL/$LOGGLY_LOG_LEVEL_NUMBER/" /etc/rsyslog.conf
 
 SYSYLOG_SERVERS=""
 while IFS='=' read -r name value ; do
         if [[ $name  == *'_HOST' ]]; then
-                new_server="1"
                 prefix=${name%%_*} # delete longest match from back (everything after first _)
                 id="$prefix"
                 server="${prefix}_HOST"
                 SERVER="${!server}"
-                server_port="${prefix}_HOSTPORT"
+                server_port="${prefix}_HOST_PORT"
                 SERVER_PORT=${!server_port}
                 SERVER_PORT=${SERVER_PORT:-514}
-                server_proto="${prefix}_HOSTPROTO"
+                server_proto="${prefix}_HOST_PROTO"
                 SERVER_PROTO=${!server_proto}
                 SERVER_PROTO=${SERVER_PROTO:-tcp}
-                server_loglevel="${prefix}_LOGLEVEL"
+                server_loglevel="${prefix}_LOG_LEVEL"
                 SERVER_LOGLEVEL=${!server_loglevel}
                 SERVER_LOGLEVEL="${SERVER_LOGLEVEL:-info}"
+                LOG_LEVEL_NUMBER=${LOG_LEVEL[${SERVER_LOGLEVEL,,}]}
+                COND_SEVERITY="(\$syslogseverity <= '$LOG_LEVEL_NUMBER')"
+
+                server_logglyenabled="${prefix}_LOGGLY_ENABLED"
+                SERVER_LOGGLY_ENABLED=${!server_logglyenabled}
+                if [[ ${SERVER_LOGGLY_ENABLED,,} == "yes" ]];then
+                  server_loggly_tag="${prefix}_LOGGLY_TAG"
+                  SERVER_LOGGLY_TAG=${!server_loggly_tag}
+                  if [[ -z "${SERVER_LOGGLY_TAG}" ]];then
+                    echo "Please provie LOGGLY TAG"
+                    exit 1
+                  fi
+                  server_loggly_token="${prefix}_LOGGLY_TOKEN"
+                  SERVER_LOGGLY_TOKEN=${!server_loggly_token}
+                  if [[ -z "${SERVER_LOGGLY_TOKEN}" ]];then
+                    echo "Please provie LOGGLY TAG"
+                    exit 1
+                  fi
+                  TEMPLATE="template=\"LogglyFormat\""
+                  sed -i "s/LOGGLY_TOKEN/${SERVER_LOGGLY_TOKEN}/" /etc/rsyslog.conf
+                  sed -i "s/LOGGLY_TAG/${SERVER_LOGGLY_TAG}/" /etc/rsyslog.conf
+                fi
                 apps="${prefix}_APPS"
                 APPS=${!apps}
-                if [[ -z ${APPS} ]]; then
-                  echo "Please setup R[\d+]_APPS var"
-                  exit 1
-                fi
-                LOGGLY_LOG_LEVEL_NUMBER=${LOG_LEVEL[${SERVER_LOGLEVEL,,}]}
-                COND_SEVERITY="(\$syslogseverity <= '$LOGGLY_LOG_LEVEL_NUMBER')"
                 COND=""
-                for app in ${APPS}
-                do
-                  COND+="(\$programname startswith '${app}') or "
-                done
-                COND="("${COND}
-                COND=$(echo $COND| sed 's/\(.*\)\ or/\1\) and /')
+                if [[ -n ${APPS} ]]; then
+                  for app in ${APPS}
+                  do
+                    COND+="(\$programname startswith '${app}') or "
+                  done
+                  COND="("${COND}
+                  COND=$(echo $COND| sed 's/\(.*\)\ or/\1\) and /')
+                fi
                 COND=${COND}${COND_SEVERITY}
                 syslog_server=${SYSYLOG_SERVER_TEMPLATE/__INDEX__/${id}}
                 syslog_server=${syslog_server/__HOST__/${SERVER}}
                 syslog_server=${syslog_server/__HOST_PROTO__/${SERVER_PROTO}}
                 syslog_server=${syslog_server/__HOST_PORT__/${SERVER_PORT}}
                 syslog_server=${syslog_server/__CONDITIONS__/${COND}}
+                syslog_server=${syslog_server/__TEMPLATE__/${TEMPLATE}}
 
                 SYSYLOG_SERVERS+=$syslog_server$'\n'
 
         fi
 done < <(env)
-if [[ -n ${new_server} ]];then
-  IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$SYSYLOG_SERVERS") || true
-  SYSYLOG_SERVERS_REPLACED=${REPLY%$'\n'}
-  sed -i -r "s/#__SYSLOG_SERVERS__/${SYSYLOG_SERVERS_REPLACED}/g" /etc/rsyslog.conf
-fi
+
+IFS= read -d '' -r < <(sed -e ':a' -e '$!{N;ba' -e '}' -e 's/[&/\]/\\&/g; s/\n/\\&/g' <<<"$SYSYLOG_SERVERS") || true
+SYSYLOG_SERVERS_REPLACED=${REPLY%$'\n'}
+sed -i -r "s/#__SYSLOG_SERVERS__/${SYSYLOG_SERVERS_REPLACED}/g" /etc/rsyslog.conf
+
 
 # Run RSyslog daemon
 exec /usr/sbin/rsyslogd -n
