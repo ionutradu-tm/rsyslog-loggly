@@ -54,28 +54,28 @@ while IFS='=' read -r name value ; do
                 server="${prefix}_HOST"
                 SERVER="${!server}"
                 server_port="${prefix}_HOST_PORT"
-                SERVER_PORT=${!server_port}
-                SERVER_PORT=${SERVER_PORT:-514}
+                SERVER_PORT="${!server_port}"
+                SERVER_PORT="${SERVER_PORT:-514}"
                 server_proto="${prefix}_HOST_PROTO"
-                SERVER_PROTO=${!server_proto}
-                SERVER_PROTO=${SERVER_PROTO:-tcp}
+                SERVER_PROTO="${!server_proto}"
+                SERVER_PROTO="${SERVER_PROTO:-tcp}"
                 server_loglevel="${prefix}_LOG_LEVEL"
-                SERVER_LOGLEVEL=${!server_loglevel}
+                SERVER_LOGLEVEL="${!server_loglevel}"
                 SERVER_LOGLEVEL="${SERVER_LOGLEVEL:-info}"
-                LOG_LEVEL_NUMBER=${LOG_LEVEL[${SERVER_LOGLEVEL,,}]}
+                LOG_LEVEL_NUMBER="${LOG_LEVEL[${SERVER_LOGLEVEL,,}]}"
                 COND_SEVERITY="(\$syslogseverity <= '$LOG_LEVEL_NUMBER')"
 
                 server_logglyenabled="${prefix}_LOGGLY_ENABLED"
-                SERVER_LOGGLY_ENABLED=${!server_logglyenabled}
+                SERVER_LOGGLY_ENABLED="${!server_logglyenabled}"
                 if [[ ${SERVER_LOGGLY_ENABLED,,} == "yes" ]];then
                   server_loggly_tag="${prefix}_LOGGLY_TAG"
-                  SERVER_LOGGLY_TAG=${!server_loggly_tag}
+                  SERVER_LOGGLY_TAG="${!server_loggly_tag}"
                   if [[ -z "${SERVER_LOGGLY_TAG}" ]];then
                     echo "Please provie LOGGLY TAG"
                     exit 1
                   fi
                   server_loggly_token="${prefix}_LOGGLY_TOKEN"
-                  SERVER_LOGGLY_TOKEN=${!server_loggly_token}
+                  SERVER_LOGGLY_TOKEN="${!server_loggly_token}"
                   if [[ -z "${SERVER_LOGGLY_TOKEN}" ]];then
                     echo "Please provie LOGGLY TAG"
                     exit 1
@@ -85,7 +85,7 @@ while IFS='=' read -r name value ; do
                   sed -i "s/LOGGLY_TAG/${SERVER_LOGGLY_TAG}/" /etc/rsyslog.conf
                 fi
                 apps="${prefix}_APPS"
-                APPS=${!apps}
+                APPS="${!apps}"
                 COND=""
                 if [[ -n ${APPS} ]]; then
                   for app in ${APPS}
