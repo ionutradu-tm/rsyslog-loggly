@@ -51,6 +51,7 @@ while IFS='=' read -r name value ; do
         if [[ $name  == *'_HOST' ]]; then
                 prefix=${name%%_*} # delete longest match from back (everything after first _)
                 id="$prefix"
+                TEMPLATE=""
                 server="${prefix}_HOST"
                 SERVER="${!server}"
                 server_port="${prefix}_HOST_PORT"
